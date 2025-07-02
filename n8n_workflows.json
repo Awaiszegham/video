@@ -1,0 +1,96 @@
+{
+  "name": "Audio Video Processing Workflows",
+  "description": "n8n workflow templates for audio/video processing automation",
+  "workflows": [
+    {
+      "name": "YouTube to Hindi Audio Workflow",
+      "description": "Download YouTube video, extract audio, transcribe, translate to Hindi, and generate Hindi speech",
+      "trigger": "webhook",
+      "steps": [
+        {
+          "node": "HTTP Request",
+          "action": "POST",
+          "url": "{{base_url}}/download",
+          "body": {
+            "url": "{{youtube_url}}",
+            "format_preference": "audio"
+          }
+        },
+        {
+          "node": "Wait",
+          "duration": "30s"
+        },
+        {
+          "node": "HTTP Request",
+          "action": "POST", 
+          "url": "{{base_url}}/ai/workflow",
+          "body": {
+            "input_file": "{{download_result.file_path}}",
+            "workflow_steps": ["transcribe", "translate", "text_to_speech"],
+            "parameters": {
+              "target_language": "hi"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Batch Video Processing",
+      "description": "Process multiple videos with the same operations",
+      "trigger": "manual",
+      "steps": [
+        {
+          "node": "Split In Batches",
+          "batch_size": 5
+        },
+        {
+          "node": "HTTP Request",
+          "action": "POST",
+          "url": "{{base_url}}/process/video",
+          "body": {
+            "input_path": "{{item.file_path}}",
+            "operations": ["{{operations}}"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Audio Cleanup Pipeline",
+      "description": "Clean up audio files with noise reduction and normalization",
+      "trigger": "file_upload",
+      "steps": [
+        {
+          "node": "HTTP Request",
+          "action": "POST",
+          "url": "{{base_url}}/process/audio",
+          "body": {
+            "input_path": "{{file_path}}",
+            "operations": ["noise_reduction", "normalize_audio"]
+          }
+        },
+        {
+          "node": "HTTP Request",
+          "action": "POST",
+          "url": "{{base_url}}/storage/upload",
+          "body": {
+            "file_path": "{{processed_file}}",
+            "remote_key": "cleaned/{{filename}}"
+          }
+        }
+      ]
+    }
+  ],
+  "setup_instructions": [
+    "1. Install n8n: npm install n8n -g",
+    "2. Start n8n: n8n start",
+    "3. Import these workflow templates",
+    "4. Configure webhook URLs and API endpoints",
+    "5. Set up environment variables for base_url",
+    "6. Test workflows with sample data"
+  ],
+  "environment_variables": {
+    "base_url": "http://localhost:8000",
+    "webhook_secret": "your_webhook_secret_here"
+  }
+}
+
